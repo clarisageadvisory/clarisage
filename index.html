@@ -538,7 +538,7 @@
       <div class="stat-grid">
         <div class="stat">
           <div class="label">Tax-Free Income</div>
-          <div class="val">5,880<small>GH₵/yr</small></div>
+          <div class="val">7,056<small>GH₵/yr</small></div>
         </div>
         <div class="stat">
           <div class="label">Top PAYE Rate</div>
@@ -550,7 +550,7 @@
         </div>
         <div class="stat">
           <div class="label">SSNIT Cap</div>
-          <div class="val">61,000<small>GH₵/mo</small></div>
+          <div class="val">69,000<small>GH₵/mo</small></div>
         </div>
       </div>
     </div>
@@ -1128,13 +1128,13 @@
       <div class="rate-card">
         <h4>PAYE Bands (Annual) <span class="chip">2026</span></h4>
         <ul class="r-list">
-          <li><span>First 5,880</span><span class="v">0%</span></li>
-          <li><span>Next 1,320</span><span class="v">5%</span></li>
-          <li><span>Next 1,560</span><span class="v">10%</span></li>
-          <li><span>Next 38,000</span><span class="v">17.5%</span></li>
+          <li><span>First 7,056</span><span class="v">0%</span></li>
+          <li><span>Next 960</span><span class="v">5%</span></li>
+          <li><span>Next 1,200</span><span class="v">10%</span></li>
+          <li><span>Next 34,800</span><span class="v">17.5%</span></li>
           <li><span>Next 192,000</span><span class="v">25%</span></li>
-          <li><span>Next 366,240</span><span class="v">30%</span></li>
-          <li><span>Exceeding 605,000</span><span class="v">35%</span></li>
+          <li><span>Next 363,984</span><span class="v">30%</span></li>
+          <li><span>Exceeding 600,000</span><span class="v">35%</span></li>
         </ul>
       </div>
 
@@ -1159,7 +1159,7 @@
           <li><span>Tier 1 (SSNIT)</span><span class="v">13.5%</span></li>
           <li><span>Tier 2 (Mandatory)</span><span class="v">5%</span></li>
           <li><span>Tier 3 (Voluntary, tax-deductible)</span><span class="v">up to 16.5%</span></li>
-          <li><span>Insurable Earnings Ceiling</span><span class="v">GH₵ 61,000/mo</span></li>
+          <li><span>Insurable Earnings Ceiling</span><span class="v">GH₵ 69,000/mo</span></li>
           <li><span>Minimum Pension Age</span><span class="v">60 (55 early)</span></li>
         </ul>
       </div>
@@ -1339,15 +1339,17 @@ document.querySelectorAll('.radio-card input[type="checkbox"]').forEach(c => {
 });
 
 // ===== PAYE MONTHLY BANDS (2026) =====
-// Annual bands: 5,880 | 1,320 | 1,560 | 38,000 | 192,000 | 366,240 | rest
-// Monthly: divide by 12
+// Income Tax (Amendment) Act, 2026 (Act 1178) — effective 1 September 2026
+// Annual bands: 7,056 | 960 | 1,200 | 34,800 | 192,000 | 363,984 | rest (cumulate to 600,000)
+// Monthly = annual / 12. NB: 363,984/12 = 30,332 for the 30% band; the GRA notice's
+// monthly column prints 30,334, which conflicts with its own annual figure — annual used as source.
 const PAYE_BANDS = [
-  { width: 5880/12,   rate: 0.00, color: '#A88B5C' },
-  { width: 1320/12,   rate: 0.05, color: '#C0A574' },
-  { width: 1560/12,   rate: 0.10, color: '#A88B5C' },
-  { width: 38000/12,  rate: 0.175, color: '#C0A574' },
+  { width: 7056/12,   rate: 0.00, color: '#A88B5C' },
+  { width: 960/12,    rate: 0.05, color: '#C0A574' },
+  { width: 1200/12,   rate: 0.10, color: '#A88B5C' },
+  { width: 34800/12,  rate: 0.175, color: '#C0A574' },
   { width: 192000/12, rate: 0.25, color: '#A88B5C' },
-  { width: 366240/12, rate: 0.30, color: '#8A6F3F' },
+  { width: 363984/12, rate: 0.30, color: '#8A6F3F' },
   { width: Infinity,  rate: 0.35, color: '#8B3A3A' }
 ];
 
@@ -1374,14 +1376,19 @@ function runPAYE() {
   const isNonRes = document.querySelector('input[name="p-res"]:checked').value === 'nonres';
   const t2Mode = document.querySelector('input[name="p-t2mode"]:checked').value;
 
-  // SSNIT / Tier 1 employee contribution: 5.5% of basic
-  const ssnit = basic * 0.055;
+  // SSNIT insurable-earnings ceiling (2026): GH₵69,000/mo. Mandatory Tier 1 & 2
+  // contributions are computed on basic salary capped at this limit.
+  const SSNIT_CEILING = 69000;
+  const insurableBasic = Math.min(basic, SSNIT_CEILING);
 
-  // Tier 2 mandatory: 5% of basic. WHO pays depends on the mode.
+  // SSNIT / Tier 1 employee contribution: 5.5% of insurable basic
+  const ssnit = insurableBasic * 0.055;
+
+  // Tier 2 mandatory: 5% of insurable basic. WHO pays depends on the mode.
   // - employer (default): employer-funded, no deduction from employee
   // - employee: deducted from employee's salary (rare private-scheme arrangement)
   // - selfemp: self-employed person pays it themselves
-  const tier2Total = basic * 0.05;
+  const tier2Total = insurableBasic * 0.05;
   const tier2EmployeeDeduction = (t2Mode === 'employer') ? 0 : tier2Total;
 
   // Tier 3 voluntary: deductible up to 16.5% of basic
@@ -1443,7 +1450,7 @@ function runPAYE() {
   // For self-employed: employer cost = gross only (no employer side)
   // For employer-funded T2: employer pays 8% Tier 1 + 5% Tier 2 = 13% of basic
   // For employee-funded T2: employer pays 8% Tier 1 only
-  const employerSsnit = (t2Mode === 'selfemp') ? 0 : basic * 0.08;
+  const employerSsnit = (t2Mode === 'selfemp') ? 0 : insurableBasic * 0.08;
   const employerT2 = (t2Mode === 'employer') ? tier2Total : 0;
   const employerCost = gross + employerSsnit + employerT2;
   document.getElementById('p-emp-gross').textContent = fmt(gross);
